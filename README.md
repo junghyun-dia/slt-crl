@@ -3,7 +3,7 @@
 Interactive reports on **visual grounding in sign language translation (SLT)** using the How2Sign dataset.
 We test whether models' output quality really depends on the signer's body regions (eyes, nose, mouth, face, shoulders, both hands), or whether BLEU gains come from somewhere else.
 
-**Live page:** [https://<username>.github.io/<repo>/](https://junghyun-dia.github.io/slt-crl/)
+**Live page:** [https://<junghyun-dia>.github.io/<slt-crl>/](https://junghyun-dia.github.io/slt-crl/)
 
 ---
 
