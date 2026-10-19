@@ -1,0 +1,472 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>CLIP vs SignCLIP</title>
+<style>
+  :root{
+    --page-plane:     #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-signclip:#2a78d6;
+    --series-signclip-wash: rgba(42,120,214,0.12);
+    --series-clip:    #eb6834;
+    --series-clip-wash: rgba(235,104,52,0.12);
+    --seq-100:#cde2fb; --seq-200:#9ec5f4; --seq-300:#6da7ec; --seq-400:#3987e5;
+    --seq-450:#2a78d6; --seq-500:#256abf; --seq-600:#184f95; --seq-700:#0d366b;
+    --good-text:      #006300;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page-plane:     #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-signclip:#3987e5;
+      --series-signclip-wash: rgba(57,135,229,0.16);
+      --series-clip:    #d95926;
+      --series-clip-wash: rgba(217,89,38,0.16);
+      --good-text:      #0ca30c;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --page-plane:     #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-signclip:#3987e5;
+    --series-signclip-wash: rgba(57,135,229,0.16);
+    --series-clip:    #d95926;
+    --series-clip-wash: rgba(217,89,38,0.16);
+    --good-text:      #0ca30c;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{ background: var(--page-plane); }
+  .viz-root{
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--text-primary);
+    background: var(--page-plane);
+    padding: 28px 20px 60px;
+    max-width: 1120px;
+    margin: 0 auto;
+  }
+  h1{ font-size: clamp(21px, 3.4vw, 27px); font-weight: 700; margin: 0 0 4px; letter-spacing: -0.01em; text-wrap: balance; }
+  .eyebrow{
+    font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom: 10px;
+  }
+  .eyebrow .dot{ width:4px; height:4px; border-radius:50%; background: var(--text-muted); flex:none; }
+  .deck{ color: var(--text-secondary); font-size: 14.5px; line-height: 1.6; max-width: 74ch; margin: 0 0 26px; }
+  .deck b{ color: var(--text-primary); font-weight: 650; }
+  h2{ font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+  .section-note{ color: var(--text-secondary); font-size: 12.5px; line-height: 1.55; max-width: 76ch; margin: 0 0 16px; }
+  .section-note code{ font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.92em; background: var(--border); padding: 0.1em 0.4em; border-radius: 4px; }
+  .card{ background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 18px; }
+
+  .tiles{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+  .tile{ background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 15px 16px; }
+  .tile .label{ font-size: 11px; color: var(--text-secondary); margin-bottom: 8px; line-height:1.4; }
+  .tile .value{ font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tile .sub{ font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+  @media (max-width: 700px){ .tiles{ grid-template-columns: 1fr; } }
+
+  .legend-row{ display:flex; align-items:center; gap:18px; font-size:12px; color:var(--text-secondary); margin-bottom:14px; flex-wrap: wrap; }
+  .legend-item{ display:flex; align-items:center; gap:6px; }
+  .swatch{ width:11px; height:11px; border-radius:3px; flex:none; }
+
+  .bar-row{ display:grid; grid-template-columns: 96px 1fr 84px; align-items:center; gap:10px; padding:6px 0; }
+  .bar-row .rname{ font-size:12.5px; text-align:right; }
+  .bar-track{ position:relative; height:24px; }
+  .bar-fill{ position:absolute; top:1px; height:22px; border-radius:4px; }
+  .bar-val{ font-size:12px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .tt{
+    position:fixed; pointer-events:none; z-index:50;
+    background: var(--surface-1); border:1px solid var(--border); border-radius:8px;
+    color: var(--text-primary); padding:8px 10px; font-size:12px; line-height:1.5;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18); max-width:260px; opacity:0; transition:opacity 0.08s ease;
+  }
+  .tt.show{ opacity:1; }
+  .tt .tt-sec{ color: var(--text-secondary); }
+
+  .heatmap-wrap{ overflow-x:auto; }
+  table.heatmap{ border-collapse:collapse; font-size:11.5px; width:100%; }
+  table.heatmap th{ font-weight:600; color:var(--text-secondary); text-align:center; padding:5px 4px; font-size:10.5px; }
+  table.heatmap th.corner{ text-align:right; }
+  table.heatmap td.rowlabel{ text-align:right; padding:0 8px 0 0; font-size:11.5px; color:var(--text-primary); white-space:nowrap; }
+  .cell{ width:100%; height:34px; min-width: 40px; display:flex; align-items:center; justify-content:center; font-variant-numeric:tabular-nums; font-size:11px; font-weight:600; border-radius:3px; }
+
+  .example-list{ display:flex; flex-direction:column; gap:0; }
+  .example{ padding: 12px 0; border-top:1px solid var(--gridline); }
+  .example:first-child{ border-top:none; }
+  .example .sent{ font-size:13px; color: var(--text-primary); line-height:1.5; margin-bottom:6px; }
+  .example .sent .hl{ background: var(--border); border-radius:3px; padding: 0 2px; font-weight:650; }
+  .example .picks{ display:flex; gap:16px; flex-wrap:wrap; font-size:12px; }
+  .example .pick{ display:flex; align-items:center; gap:6px; color: var(--text-secondary); }
+  .example .pick b{ color: var(--text-primary); font-weight:650; }
+
+  .callout{ background: var(--border); border-radius:8px; padding:10px 14px; font-size:12px; color:var(--text-secondary); line-height:1.55; margin-top:12px; }
+  .callout b{ color: var(--text-primary); }
+
+  footer{ color: var(--text-muted); font-size:11.5px; line-height:1.7; margin-top:22px; }
+  footer code{ font-size:11px; background: var(--border); padding:1px 5px; border-radius:4px; }
+
+  .doc-meta{ display:inline-flex; align-items:center; gap:8px; margin-left:10px; vertical-align:middle; }
+  .doc-ver{ font-size:10.5px; font-weight:650; color:var(--text-muted); background:var(--border); border-radius:20px; padding:2px 8px; }
+  .doc-info-btn{ appearance:none; border:1px solid var(--border); background:var(--surface-1); color:var(--text-secondary); font:inherit; font-size:10.5px; font-weight:600; border-radius:20px; padding:2px 9px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+  .doc-info-btn:hover{ color:var(--text-primary); border-color: var(--series-signclip); }
+  .doc-info-overlay{ position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .doc-info-modal{ background:var(--surface-1); border:1px solid var(--border); border-radius:12px; max-width:560px; width:100%; max-height:80vh; overflow-y:auto; padding:20px 22px; box-shadow:0 12px 40px rgba(0,0,0,0.25); }
+  .doc-info-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .doc-info-head h3{ font-size:15px; font-weight:650; margin:0; }
+  .doc-info-close{ appearance:none; border:none; background:none; color:var(--text-muted); font-size:16px; cursor:pointer; line-height:1; padding:4px; }
+  .doc-info-close:hover{ color:var(--text-primary); }
+  .doc-info-body{ font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-top:10px; }
+  .doc-info-body h4{ font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); margin:16px 0 6px; }
+  .doc-info-body h4:first-child{ margin-top:0; }
+  .doc-info-body dl{ margin:0; }
+  .doc-info-body dt{ font-weight:650; color:var(--text-primary); margin-top:8px; }
+  .doc-info-body dd{ margin:2px 0 0; }
+  .doc-info-body code{ font-size:11px; background:var(--border); padding:1px 5px; border-radius:4px; }
+</style>
+
+<div class="viz-root">
+  <div class="eyebrow">
+    <span>How2Sign · 300 held-out sentences</span><span class="dot"></span>
+    <span>random4000_v3</span><span class="dot"></span>
+    <span>independent-scorer cross-check</span>
+    <span class="doc-meta"><span class="doc-ver">Ver. 2</span><button class="doc-info-btn" id="docInfoBtn" type="button">ⓘ Scorers &amp; methods</button></span>
+  </div>
+  <h1>Two grounding scorers, two different answers</h1>
+  <p class="deck">CLIP and SignCLIP are both zero-shot vision-language scorers used elsewhere in this project as an "independent" stand-in for which body region a cue word should ground to. We ran both on the same 300 test sentences, the same spaCy-extracted cue phrases, and — as region definitions were split progressively finer, four times over — <b>the same eight body regions</b>. At every granularity we tried, <b>the two scorers agree with each other no more than chance would predict.</b></p>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <h2>Splitting regions finer doesn't close the gap</h2>
+    <p class="section-note">Same 2,817 phrase-level decisions, re-scored four times as the shared region set went from 4 lumped regions to 6 (splitting "face" into mouth/eyes/face-outline) to 7 (adding "shoulder" alongside "body") to 8 (adding "torso" — "body" minus the wrist/fingertip points MediaPipe's own pose skeleton already carries). The excess over chance stays essentially flat throughout — this isn't a resolution problem.</p>
+    <div class="legend-row">
+      <div class="legend-item"><span class="swatch" style="background:var(--series-signclip)"></span>Observed agreement</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--baseline)"></span>Chance level (given each scorer's own region mix)</div>
+    </div>
+    <div id="chart-granularity"></div>
+  </div>
+
+  <div class="card">
+    <h2>Where each scorer looks, at full (8-region) granularity</h2>
+    <p class="section-note">Share of all 2,817 phrase decisions won by each region. The two distributions don't just disagree phrase-by-phrase — they don't even agree in aggregate: CLIP leans on <code>mouth</code>/<code>right_hand</code> noticeably more, SignCLIP spreads more evenly across <code>right_hand</code>/<code>face_oval</code>/<code>body</code>. Both scorers rank <code>body</code> above its hand-stripped sibling <code>torso</code> — masking out the wrist/fingertip leakage makes the region slightly less "useful" for both, in the same direction.</p>
+    <div class="legend-row">
+      <div class="legend-item"><span class="swatch" style="background:var(--series-signclip)"></span>SignCLIP</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--series-clip)"></span>CLIP</div>
+    </div>
+    <div id="chart-distribution"></div>
+  </div>
+
+  <div class="card">
+    <h2>Confusion matrix: SignCLIP's pick vs. CLIP's pick</h2>
+    <p class="section-note">Rows = the region SignCLIP chose for a phrase; columns = the region CLIP chose for the <em>same</em> phrase. A model-agreement pattern would show a bright diagonal — there isn't one. Darker = more phrases landed in that (SignCLIP, CLIP) pair.</p>
+    <div class="heatmap-wrap" id="heatmap"></div>
+  </div>
+
+  <div class="card">
+    <h2>What disagreement actually looks like</h2>
+    <p class="section-note">Ten real sentences, one cue phrase each, both scorers' picks for that exact word. This is what "13.6% agreement" cashes out to at the sentence level.</p>
+    <div class="example-list" id="examples"></div>
+  </div>
+
+  <footer id="footer"></footer>
+</div>
+
+<div class="tt" id="tooltip"></div>
+
+<div class="doc-info-overlay" id="docInfoOverlay" hidden>
+  <div class="doc-info-modal" role="dialog" aria-modal="true" aria-labelledby="docInfoTitle">
+    <div class="doc-info-head">
+      <h3 id="docInfoTitle">Scorers &amp; methodology</h3>
+      <button class="doc-info-close" id="docInfoClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="doc-info-body">
+      <h4>Scorers compared</h4>
+      <p><b>CLIP</b> (openai/clip-vit-base-patch32): scores region-CROPPED pixels per frame against text, argmax over frames after subtracting each frame's mean similarity across phrases (removes generic "attractor" frames). <b>SignCLIP</b> (SignCLIP-multilingual, pretrained on Spreadthesign — never trained on How2Sign): scores a MediaPipe-Holistic pose sequence with all but one landmark group/point-subset zeroed, one call per region, same baseline correction applied per-sequence.</p>
+      <h4>Cue phrases</h4>
+      <p>spaCy noun-chunks + verb lemmas (<code>grounding.cue_extraction.extract_cue_phrases</code>) on the ground-truth sentence text — identical extraction for both scorers, verified to produce byte-identical phrase lists per sentence (0 mismatches across 300 sentences).</p>
+      <h4>Region definitions</h4>
+      <dl>
+        <dt>body</dt><dd>CLIP: bbox over shoulders+hips — visually CONTAINS the hands whenever they're held in front of the torso (most of continuous signing). SignCLIP: whole POSE_LANDMARKS (33-point skeleton) — which itself already includes both wrists plus a coarse pinky/index/thumb fingertip estimate per side, independent of the separate, much more detailed 21-point hand-landmark groups. Neither "body" is a clean hand-free control.</dd>
+        <dt>torso</dt><dd>An ADDITIONAL probe, added alongside "body" (not replacing it) once the above was noticed. CLIP: the same body bbox, but with left_hand/right_hand boxes blacked out first — same recipe as face_oval. SignCLIP: POSE_LANDMARKS with both wrists and both sides' pinky/index/thumb points zeroed. Both scorers score it slightly lower than "body" — consistent with those extra points carrying real, if coarse, hand information.</dd>
+        <dt>shoulder</dt><dd>An ADDITIONAL probe on both sides, not carved out of "body" — CLIP: bbox over LEFT/RIGHT_SHOULDER only. SignCLIP: POSE_LANDMARKS masked to LEFT/RIGHT_SHOULDER only. The two overlap with "body" by design on both sides, mirroring how region_extractor.py already treats them.</dd>
+        <dt>eyes / mouth / face_oval</dt><dd>CLIP: separate landmark-derived bboxes; face_oval's box has eyes+mouth bboxes blacked out first so it doesn't just re-show them inside a bigger rectangle. SignCLIP: a strict, non-overlapping 128-point partition of its face input (40 mouth / 52 eyes+eyebrows / 36 outline points) — verified exhaustive, zero overlap.</dd>
+        <dt>left_hand / right_hand</dt><dd>Bbox / full hand landmark group respectively — the one region pair that's a genuinely close match between the two scorers.</dd>
+      </dl>
+      <p><b>No "nose":</b> SignCLIP's face input is MediaPipe's 128-point contour set, which structurally contains zero of mediapipe's own FACEMESH_NOSE points — there is no way to isolate a nose signal from this model's input at all, so CLIP's nose region is excluded from every comparison here.</p>
+      <h4>Chance level</h4>
+      <p>Two numbers shown throughout: <b>uniform</b> (1 / region count) and <b>marginal</b> (Σ P(SignCLIP=r)·P(CLIP=r) over each scorer's own observed region mix — the agreement rate you'd expect from two independent draws with these exact marginals, not a flat guess).</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const REGIONS8 = ["body","torso","shoulder","left_hand","right_hand","eyes","mouth","face_oval"];
+const REGION_LABEL = {body:"Body",torso:"Torso",shoulder:"Shoulder",left_hand:"Left hand",right_hand:"Right hand",eyes:"Eyes",mouth:"Mouth",face_oval:"Face outline"};
+
+const GRANULARITY = [
+  {label:"4 regions", n:2817, agree_pct:25.5, chance_pct:24.1},
+  {label:"6 regions", n:2817, agree_pct:18.4, chance_pct:17.0},
+  {label:"7 regions", n:2817, agree_pct:15.6, chance_pct:14.6},
+  {label:"8 regions", n:2817, agree_pct:13.6, chance_pct:13.2},
+];
+
+const SIGNCLIP_DIST = {body:335, torso:273, shoulder:244, left_hand:342, right_hand:504, eyes:332, mouth:352, face_oval:435};
+const CLIP_DIST     = {body:256, torso:189, shoulder:321, left_hand:470, right_hand:576, eyes:194, mouth:477, face_oval:334};
+const TOTAL_N = 2817;
+
+const CONFUSION = {
+  body:       {body:45, torso:21, shoulder:50, left_hand:47, right_hand:55, eyes:24, mouth:46, face_oval:47},
+  torso:      {body:12, torso:14, shoulder:25, left_hand:51, right_hand:45, eyes:18, mouth:80, face_oval:28},
+  shoulder:   {body:16, torso:12, shoulder:20, left_hand:44, right_hand:59, eyes:28, mouth:38, face_oval:27},
+  left_hand:  {body:26, torso:32, shoulder:34, left_hand:60, right_hand:77, eyes:14, mouth:50, face_oval:49},
+  right_hand: {body:63, torso:39, shoulder:64, left_hand:90, right_hand:103,eyes:31, mouth:68, face_oval:46},
+  eyes:       {body:16, torso:12, shoulder:33, left_hand:53, right_hand:76, eyes:26, mouth:69, face_oval:47},
+  mouth:      {body:36, torso:27, shoulder:40, left_hand:52, right_hand:66, eyes:17, mouth:69, face_oval:45},
+  face_oval:  {body:42, torso:32, shoulder:55, left_hand:73, right_hand:95, eyes:36, mouth:57, face_oval:45},
+};
+
+const EXAMPLES = [
+  {sentence_id:"-fZc293MpJk_7", gt_sentence:"That's moved by the feet and that's what actually steers the airplane right and left when you start and stop a turn.", phrase:"That", signclip_region:"mouth", clip_region:"right_hand"},
+  {sentence_id:"-g45vqccdzI_9", gt_sentence:"And we can get a little bit of a jump here and here we are on the other side of that door.", phrase:"we", signclip_region:"shoulder", clip_region:"mouth"},
+  {sentence_id:"37ZtKNf6Yd8_5", gt_sentence:"They go down and they wrap around the bridge, they're tied on, there's no balls on these strings at all even on the top.", phrase:"They", signclip_region:"eyes", clip_region:"left_hand"},
+  {sentence_id:"8kAWy2YodzQ_15", gt_sentence:"And then you hold down the third string on the fifth fret and pluck the fourth string too.", phrase:"you", signclip_region:"eyes", clip_region:"mouth"},
+  {sentence_id:"8kAWy2YodzQ_6", gt_sentence:"Or you can use any pitch pipe that you have at home.", phrase:"you", signclip_region:"face_oval", clip_region:"right_hand"},
+  {sentence_id:"92V3oH63zbQ_10", gt_sentence:"It gives me a lot more power.", phrase:"It", signclip_region:"eyes", clip_region:"mouth"},
+  {sentence_id:"FZCEymcpq7I_7", gt_sentence:"So, what you want to do is work on; I'm going to work on a half a swing here.", phrase:"what", signclip_region:"mouth", clip_region:"torso"},
+  {sentence_id:"FZCF7kPIyOk_11", gt_sentence:"This way, it's all secured, it's all fastened with the bindings, and that makes it to where if you have a longer script.", phrase:"it", signclip_region:"shoulder", clip_region:"mouth"},
+  {sentence_id:"FZCF7kPIyOk_12", gt_sentence:"People can going to flip through it; it's securely bound, there's nothing they're going to injure themselves with.", phrase:"People", signclip_region:"body", clip_region:"mouth"},
+  {sentence_id:"FZCF7kPIyOk_14", gt_sentence:"Also--yeah, this is good to have, the visual, you can see through it.", phrase:"you", signclip_region:"face_oval", clip_region:"eyes"},
+];
+
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+const tooltip = document.getElementById('tooltip');
+function showTip(evt, lines){
+  tooltip.innerHTML = lines.join('<br>');
+  tooltip.classList.add('show');
+  moveTip(evt);
+}
+function moveTip(evt){
+  let x = evt.clientX + 14, y = evt.clientY + 14;
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+  if (x + tw > window.innerWidth - 10) x = evt.clientX - tw - 14;
+  if (y + th > window.innerHeight - 10) y = evt.clientY - th - 14;
+  tooltip.style.left = x + 'px'; tooltip.style.top = y + 'px';
+}
+function hideTip(){ tooltip.classList.remove('show'); }
+
+function svgEl(tag, attrs){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  return el;
+}
+
+// ---- headline tiles ----
+(function tiles(){
+  const wrap = document.getElementById('tiles');
+  const g8 = GRANULARITY[3];
+  const rows = [
+    {label:"Agreement at full granularity (8 regions)", value: g8.agree_pct.toFixed(1)+"%", sub:"2,817 phrase-level decisions"},
+    {label:"Chance level, same decisions", value: g8.chance_pct.toFixed(1)+"%", sub:"given each scorer's own region mix"},
+    {label:"Excess over chance", value: "+"+(g8.agree_pct-g8.chance_pct).toFixed(1)+"pp", sub:"same margin at 4- and 6-region too — see below"},
+  ];
+  rows.forEach(r=>{
+    const t = document.createElement('div'); t.className='tile';
+    t.innerHTML = `<div class="label">${r.label}</div><div class="value">${r.value}</div><div class="sub">${r.sub}</div>`;
+    wrap.appendChild(t);
+  });
+})();
+
+// ---- granularity robustness chart (grouped bars: agree vs chance, 3 groups) ----
+(function granularityChart(){
+  const svg = svgEl('svg', {viewBox:'0 0 860 234', style:'width:100%;height:auto;display:block;overflow:visible;'});
+  document.getElementById('chart-granularity').appendChild(svg);
+
+  const W=860,H=234, leftPad=90, rightPad=40, topPad=14, rowH=50, barH=15;
+  const dMax = 30;
+  const plotW = W-leftPad-rightPad;
+  function xOf(v){ return leftPad + (v/dMax)*plotW; }
+
+  const ticks=[0,10,20,30];
+  ticks.forEach(t=>{
+    const x=xOf(t);
+    svg.appendChild(svgEl('line',{x1:x,x2:x,y1:topPad-4,y2:topPad+GRANULARITY.length*rowH-10,stroke:cssVar('--gridline'),'stroke-width':1}));
+    const lab=svgEl('text',{x:x,y:topPad+GRANULARITY.length*rowH+8,'text-anchor':'middle',fill:cssVar('--text-muted'),style:'font-size:10.5px;font-variant-numeric:tabular-nums;'});
+    lab.textContent=t+'%'; svg.appendChild(lab);
+  });
+
+  const colorAgree = cssVar('--series-signclip'), colorChance = cssVar('--baseline');
+
+  GRANULARITY.forEach((g,i)=>{
+    const cy = topPad + i*rowH;
+    const label = svgEl('text',{x:leftPad-12,y:cy+rowH/2+4,'text-anchor':'end',fill:cssVar('--text-primary'),style:'font-size:12.5px;font-weight:600;'});
+    label.textContent = g.label; svg.appendChild(label);
+
+    [['agree_pct',colorAgree,'Observed agreement',0],['chance_pct',colorChance,'Chance level',1]].forEach(([key,color,who,j])=>{
+      const val = g[key];
+      const y = cy + 6 + j*(barH+5);
+      const w = Math.max(2, xOf(val)-leftPad);
+      const rect = svgEl('rect',{x:leftPad,y:y,width:w,height:barH,rx:4,ry:4,fill:color,style:'cursor:pointer;'});
+      svg.appendChild(rect);
+      const vlab = svgEl('text',{x:leftPad+w+8,y:y+barH-3,fill:cssVar('--text-secondary'),style:'font-size:11px;font-variant-numeric:tabular-nums;'});
+      vlab.textContent = val.toFixed(1)+'%';
+      svg.appendChild(vlab);
+      rect.addEventListener('mouseenter', e=>{showTip(e,[g.label,`<span class="tt-sec">${who}</span> ${val.toFixed(1)}%`]); rect.style.filter='brightness(1.1)';});
+      rect.addEventListener('mousemove', moveTip);
+      rect.addEventListener('mouseleave', ()=>{hideTip(); rect.style.filter='';});
+    });
+  });
+})();
+
+// ---- 7-region distribution grouped bar chart ----
+(function distributionChart(){
+  const svg = svgEl('svg', {viewBox:'0 0 860 400', style:'width:100%;height:auto;display:block;overflow:visible;'});
+  document.getElementById('chart-distribution').appendChild(svg);
+
+  const W=860,H=400, leftPad=100, rightPad=50, topPad=10, rowH=45, barH=14;
+  const dMax = 25;
+  const plotW = W-leftPad-rightPad;
+  function xOf(v){ return leftPad + (v/dMax)*plotW; }
+
+  const order = [...REGIONS8].sort((a,b)=> (SIGNCLIP_DIST[b]+CLIP_DIST[b]) - (SIGNCLIP_DIST[a]+CLIP_DIST[a]) );
+
+  const ticks=[0,5,10,15,20,25];
+  ticks.forEach(t=>{
+    const x=xOf(t);
+    svg.appendChild(svgEl('line',{x1:x,x2:x,y1:topPad-4,y2:topPad+order.length*rowH-10,stroke:cssVar('--gridline'),'stroke-width':1}));
+    const lab=svgEl('text',{x:x,y:topPad+order.length*rowH+8,'text-anchor':'middle',fill:cssVar('--text-muted'),style:'font-size:10.5px;font-variant-numeric:tabular-nums;'});
+    lab.textContent=t+'%'; svg.appendChild(lab);
+  });
+
+  const colorSC = cssVar('--series-signclip'), colorCL = cssVar('--series-clip');
+
+  order.forEach((region,i)=>{
+    const cy = topPad + i*rowH;
+    const label = svgEl('text',{x:leftPad-12,y:cy+rowH/2+4,'text-anchor':'end',fill:cssVar('--text-primary'),style:'font-size:12.5px;font-weight:600;'});
+    label.textContent = REGION_LABEL[region]; svg.appendChild(label);
+
+    [['SIGNCLIP',SIGNCLIP_DIST,colorSC,'SignCLIP',0],['CLIP',CLIP_DIST,colorCL,'CLIP',1]].forEach(([key,dist,color,who,j])=>{
+      const pct = 100*dist[region]/TOTAL_N;
+      const y = cy + 5 + j*(barH+4);
+      const w = Math.max(2, xOf(pct)-leftPad);
+      const rect = svgEl('rect',{x:leftPad,y:y,width:w,height:barH,rx:3,ry:3,fill:color,style:'cursor:pointer;'});
+      svg.appendChild(rect);
+      const vlab = svgEl('text',{x:leftPad+w+8,y:y+barH-2,fill:cssVar('--text-secondary'),style:'font-size:10.5px;font-variant-numeric:tabular-nums;'});
+      vlab.textContent = pct.toFixed(1)+'%';
+      svg.appendChild(vlab);
+      rect.addEventListener('mouseenter', e=>{showTip(e,[REGION_LABEL[region],`<span class="tt-sec">${who}</span> ${pct.toFixed(1)}% (${dist[region]} phrases)`]); rect.style.filter='brightness(1.1)';});
+      rect.addEventListener('mousemove', moveTip);
+      rect.addEventListener('mouseleave', ()=>{hideTip(); rect.style.filter='';});
+    });
+  });
+})();
+
+// ---- confusion matrix heatmap ----
+(function heatmap(){
+  const wrap = document.getElementById('heatmap');
+  const table = document.createElement('table');
+  table.className = 'heatmap';
+
+  const maxVal = Math.max(...REGIONS8.flatMap(r=>REGIONS8.map(c=>CONFUSION[r][c])));
+  const steps = ['--seq-100','--seq-200','--seq-300','--seq-400','--seq-500','--seq-600','--seq-700'].map(cssVar);
+
+  function colorFor(v){
+    const t = v / maxVal; // 0..1
+    const idx = Math.min(steps.length-1, Math.floor(t*steps.length));
+    return steps[idx];
+  }
+  function textFor(v){
+    const t = v/maxVal;
+    return t > 0.55 ? '#ffffff' : cssVar('--text-primary');
+  }
+
+  let thead = '<tr><th class="corner">SignCLIP \\ CLIP</th>' + REGIONS8.map(c=>`<th>${REGION_LABEL[c]}</th>`).join('') + '</tr>';
+  table.innerHTML = '<thead>'+thead+'</thead>';
+  const tbody = document.createElement('tbody');
+  REGIONS8.forEach(r=>{
+    const tr = document.createElement('tr');
+    const rowLabel = document.createElement('td');
+    rowLabel.className='rowlabel'; rowLabel.textContent = REGION_LABEL[r];
+    tr.appendChild(rowLabel);
+    REGIONS8.forEach(c=>{
+      const td = document.createElement('td');
+      const v = CONFUSION[r][c];
+      const div = document.createElement('div');
+      div.className='cell';
+      div.style.background = colorFor(v);
+      div.style.color = textFor(v);
+      div.textContent = v;
+      div.addEventListener('mouseenter', e=>{showTip(e,[`SignCLIP: <b>${REGION_LABEL[r]}</b>`,`CLIP: <b>${REGION_LABEL[c]}</b>`,`<span class="tt-sec">${v} phrases (${(100*v/TOTAL_N).toFixed(1)}%)</span>`]);});
+      div.addEventListener('mousemove', moveTip);
+      div.addEventListener('mouseleave', hideTip);
+      td.appendChild(div);
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  wrap.appendChild(table);
+})();
+
+// ---- disagreement examples ----
+(function examples(){
+  const wrap = document.getElementById('examples');
+  EXAMPLES.forEach(ex=>{
+    const div = document.createElement('div');
+    div.className = 'example';
+    const idx = ex.gt_sentence.indexOf(ex.phrase);
+    let sentHtml;
+    if (idx >= 0){
+      sentHtml = ex.gt_sentence.slice(0,idx) + '<span class="hl">' + ex.gt_sentence.slice(idx, idx+ex.phrase.length) + '</span>' + ex.gt_sentence.slice(idx+ex.phrase.length);
+    } else {
+      sentHtml = ex.gt_sentence;
+    }
+    div.innerHTML = `
+      <div class="sent">${sentHtml}</div>
+      <div class="picks">
+        <span class="pick"><span class="swatch" style="background:var(--series-signclip)"></span>SignCLIP → <b>${REGION_LABEL[ex.signclip_region]}</b></span>
+        <span class="pick"><span class="swatch" style="background:var(--series-clip)"></span>CLIP → <b>${REGION_LABEL[ex.clip_region]}</b></span>
+      </div>`;
+    wrap.appendChild(div);
+  });
+})();
+
+// ---- footer ----
+document.getElementById('footer').innerHTML = `
+  <div><b>Data.</b> How2Sign <code>random4000_v3</code> test split, 300 sentences, 2,817 spaCy-extracted cue phrases scored by both CLIP and SignCLIP (0 phrase-list mismatches). Region granularity was widened four times over the same phrases: 4 → 6 → 7 → 8 regions.</div>
+  <div style="margin-top:6px;"><b>Caveats.</b> "Chance level" assumes independence between the two scorers' region choices, which is itself the finding, not an external ground truth — this page shows disagreement between two proxies, not which one (if either) is correct. Confusion-matrix cell counts are raw phrase counts, not normalized per row/column.</div>
+`;
+
+// ---- info modal ----
+(function(){
+  const btn=document.getElementById('docInfoBtn'), overlay=document.getElementById('docInfoOverlay'), closeBtn=document.getElementById('docInfoClose');
+  function openModal(){ overlay.hidden=false; }
+  function closeModal(){ overlay.hidden=true; }
+  btn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && !overlay.hidden) closeModal(); });
+})();
+</script>
+
+</body></html>

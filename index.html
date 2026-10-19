@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Does Sign Language Translation Actually Look at the Signer?</title>
+<meta name="description" content="Interactive reports on visual grounding in sign language translation, using How2Sign.">
+<style>
+  :root {
+    --bg: #faf9f7;
+    --surface: #ffffff;
+    --text: #1f1e1d;
+    --muted: #6b6a68;
+    --border: #e4e2de;
+    --accent: #2563eb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1a1918;
+      --surface: #242322;
+      --text: #ecebe9;
+      --muted: #a09e9b;
+      --border: #3a3836;
+      --accent: #7aa2f7;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", Roboto, sans-serif;
+    line-height: 1.6;
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 56px 20px 80px; }
+  .eyebrow {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 { font-size: clamp(28px, 5vw, 40px); line-height: 1.2; margin: 12px 0 16px; }
+  .lead { font-size: 17px; color: var(--muted); max-width: 680px; margin: 0 0 32px; }
+  .facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 12px; margin-bottom: 44px;
+  }
+  .fact { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .fact b { display: block; font-size: 22px; font-weight: 600; }
+  .fact span { font-size: 13px; color: var(--muted); }
+  h2 { font-size: 18px; margin: 0 0 14px; }
+  .cards { display: grid; gap: 14px; }
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    transition: border-color .15s, transform .15s;
+  }
+  .card:hover, .card:focus-visible { border-color: var(--accent); transform: translateY(-1px); outline: none; }
+  .card .step { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); }
+  .card h3 { margin: 4px 0 6px; font-size: 18px; }
+  .card p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .card .go { margin-top: 10px; font-size: 14px; color: var(--accent); }
+  .note {
+    margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">How2Sign &middot; 300 held-out sentences &middot; 4K-sentence training slice</div>
+  <h1>Does Sign Language Translation Actually Look at the Signer?</h1>
+  <p class="lead">
+    Interactive reports testing whether SLT models’ output quality depends on the signer’s body regions
+    (eyes, nose, mouth, face, shoulders, hands), or whether BLEU gains come from somewhere else.
+  </p>
+
+  <div class="facts">
+    <div class="fact"><b>300</b><span>How2Sign test sentences</span></div>
+    <div class="fact"><b>4,000</b><span>training sentences (small-scale slice)</span></div>
+    <div class="fact"><b>+0.4pp</b><span>scorer agreement over chance</span></div>
+  </div>
+
+  <h2>Reports</h2>
+  <div class="cards">
+    <a class="card" href="artifacts/mmslt-region-ablation-4k.html">
+      <div class="step">01 &middot; Region ablation</div>
+      <h3>MMSLT Region Ablation (4K Training)</h3>
+      <p>Blacks out each body region at test time and re-runs generation with the same checkpoint to measure how much output quality depends on it.</p>
+      <div class="go">Open report &rarr;</div>
+    </a>
+    <a class="card" href="artifacts/grounding-or-guessing.html">
+      <div class="step">02 &middot; Fine-tuning</div>
+      <h3>Grounding or Guessing</h3>
+      <p>Region-masking reliability of Qwen2.5-VL-3B-Instruct before and after LoRA fine-tuning. Fine-tuning didn’t teach it to look; it taught it to guess more confidently.</p>
+      <div class="go">Open report &rarr;</div>
+    </a>
+    <a class="card" href="artifacts/clip-vs-signclip.html">
+      <div class="step">03 &middot; Scorer check</div>
+      <h3>CLIP vs SignCLIP</h3>
+      <p>Two zero-shot scorers, two different answers: their agreement on which body region a cue word grounds to is barely above chance.</p>
+      <div class="go">Open report &rarr;</div>
+    </a>
+    <a class="card" href="artifacts/grounding-viewer-4k.html">
+      <div class="step">04 &middot; Examples</div>
+      <h3>Grounding Example Viewer (4K Training)</h3>
+      <p>Browse individual examples behind the aggregate numbers.</p>
+      <div class="go">Open viewer &rarr;</div>
+    </a>
+  </div>
+
+  <p class="note">
+    Work in progress: scaled-up training runs (10K / 20K / ~31K sentences) are planned as a follow-up.
+    How2Sign data is subject to its own license.
+  </p>
+</main>
+</body>
+</html>

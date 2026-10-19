@@ -1,0 +1,545 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Grounding or Guessing</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,440;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --page-bg:#f7f4ee;
+    --surface:#fdfaf4;
+    --chart-surface:#fcfcfb;
+    --ink-900:#1f1a16;
+    --ink-700:#4b453d;
+    --ink-500:#83786b;
+    --hairline:#e4ddd0;
+    --baseline:#c7bfae;
+    --series-pre:#2a78d6;
+    --series-sft:#eb6834;
+    --critical:#d03b3b;
+    --ring:rgba(31,26,22,0.09);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page-bg:#14120f;
+      --surface:#1d1a16;
+      --chart-surface:#1a1a19;
+      --ink-900:#f7f3ec;
+      --ink-700:#cec5b4;
+      --ink-500:#948a7b;
+      --hairline:#322d26;
+      --baseline:#423c33;
+      --series-pre:#3987e5;
+      --series-sft:#d95926;
+      --critical:#e0605f;
+      --ring:rgba(255,255,255,0.10);
+    }
+  }
+  :root[data-theme="dark"]{
+    --page-bg:#14120f;
+    --surface:#1d1a16;
+    --chart-surface:#1a1a19;
+    --ink-900:#f7f3ec;
+    --ink-700:#cec5b4;
+    --ink-500:#948a7b;
+    --hairline:#322d26;
+    --baseline:#423c33;
+    --series-pre:#3987e5;
+    --series-sft:#d95926;
+    --critical:#e0605f;
+    --ring:rgba(255,255,255,0.10);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--page-bg);
+    color:var(--ink-900);
+    font-family:"Source Sans 3", system-ui, -apple-system, sans-serif;
+    line-height:1.55;
+    padding-inline:20px;
+  }
+  .wrap{max-width:900px;margin:0 auto;padding-block:56px 80px;}
+
+  h1,h2,h3{font-family:"Fraunces", Georgia, serif; text-wrap:balance; margin:0;}
+  .eyebrow{
+    font-family:"IBM Plex Mono", monospace;
+    font-size:12.5px;
+    letter-spacing:0.09em;
+    text-transform:uppercase;
+    color:var(--ink-500);
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .eyebrow .dot{width:5px;height:5px;border-radius:50%;background:var(--ink-500);flex:none;}
+
+  header{display:flex;flex-direction:column;gap:22px;margin-bottom:56px;}
+  h1{font-size:clamp(34px,5.4vw,54px);font-weight:700;letter-spacing:-0.01em;}
+  .deck{font-size:18px;color:var(--ink-700);max-width:62ch;}
+  .deck b{color:var(--ink-900);font-weight:600;}
+
+  section{margin-block:64px;}
+  section > h2{font-size:26px;font-weight:600;margin-bottom:6px;}
+  .section-note{color:var(--ink-700);font-size:15.5px;max-width:66ch;margin-bottom:26px;}
+  .section-note code{font-family:"IBM Plex Mono",monospace;font-size:0.92em;background:var(--ring);padding:0.1em 0.4em;border-radius:4px;}
+
+  /* ---- stat tiles ---- */
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;}
+  .tile{
+    background:var(--surface);
+    border:1px solid var(--ring);
+    border-radius:10px;
+    padding:20px 20px 18px;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .tile .label{font-size:13px;color:var(--ink-500);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;}
+  .tile .rows{display:flex;flex-direction:column;gap:4px;}
+  .tile .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;}
+  .tile .row .who{font-size:13.5px;color:var(--ink-700);}
+  .tile .row .val{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:19px;font-weight:600;}
+  .swatch{width:9px;height:9px;border-radius:2px;display:inline-block;margin-right:6px;flex:none;}
+  .tile .foot{font-size:12.5px;color:var(--ink-500);margin-top:2px;}
+
+  /* ---- legend ---- */
+  .legend{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:18px;font-size:14px;color:var(--ink-700);}
+  .legend .item{display:flex;align-items:center;gap:8px;}
+  .legend .sw{width:12px;height:12px;border-radius:3px;flex:none;}
+
+  /* ---- chart card ---- */
+  .chart-card{
+    background:var(--chart-surface);
+    border:1px solid var(--ring);
+    border-radius:12px;
+    padding:22px 24px 14px;
+  }
+  .chart-card svg{width:100%;height:auto;display:block;overflow:visible;}
+  .bar-label{font-family:"IBM Plex Mono",monospace;font-size:12.5px;fill:var(--ink-700);}
+  .axis-label{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-500);}
+  .value-label{font-family:"IBM Plex Mono",monospace;font-size:11.5px;fill:var(--ink-500);font-variant-numeric:tabular-nums;}
+  .gridline{stroke:var(--hairline);stroke-width:1;}
+  .baseline-rule{stroke:var(--baseline);stroke-width:1.4;}
+  .bar{cursor:pointer;}
+  .bar:hover, .bar.hovered{filter:brightness(1.08);}
+  .tick-ref{stroke:var(--ink-900);stroke-width:2;stroke-linecap:round;opacity:0.55;}
+
+  .tooltip{
+    position:fixed;
+    pointer-events:none;
+    background:var(--ink-900);
+    color:var(--page-bg);
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12.5px;
+    padding:7px 10px;
+    border-radius:7px;
+    line-height:1.4;
+    z-index:50;
+    opacity:0;
+    transition:opacity 0.08s;
+    white-space:nowrap;
+  }
+  .tooltip.show{opacity:1;}
+  .tooltip .t-who{opacity:0.65;}
+
+  /* ---- collapse list ---- */
+  .collapse-cols{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  @media (max-width:640px){.collapse-cols{grid-template-columns:1fr;}}
+  .collapse-col h3{font-size:15px;font-family:"Source Sans 3",sans-serif;font-weight:700;margin-bottom:2px;}
+  .collapse-col .sub{font-size:13px;color:var(--ink-500);margin-bottom:14px;}
+  .rep-row{display:flex;gap:12px;align-items:baseline;padding-block:9px;border-top:1px solid var(--hairline);}
+  .rep-row:first-of-type{border-top:none;}
+  .rep-count{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:13px;font-weight:600;
+    color:var(--ink-900);
+    background:var(--ring);
+    border-radius:5px;
+    padding:2px 7px;
+    flex:none;
+    min-width:44px;
+    text-align:center;
+  }
+  .rep-text{font-size:14px;color:var(--ink-700);}
+  .rep-text.top{color:var(--ink-900);font-weight:600;}
+
+  /* ---- table ---- */
+  table{width:100%;border-collapse:collapse;font-size:14.5px;}
+  th,td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--hairline);}
+  th{color:var(--ink-500);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:0.03em;}
+  td.num,th.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;}
+  tbody tr:last-child td{border-bottom:none;}
+  .table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:6px 16px;}
+
+  footer{
+    margin-top:70px;
+    padding-top:26px;
+    border-top:1px solid var(--hairline);
+    font-size:13.5px;
+    color:var(--ink-500);
+    display:flex;flex-direction:column;gap:10px;
+  }
+  footer b{color:var(--ink-700);}
+
+  .doc-ver { font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600; color:var(--ink-500); background:var(--ring); border-radius:20px; padding:2px 9px; letter-spacing:0; text-transform:none; }
+  .doc-info-btn { appearance:none; border:1px solid var(--hairline); background:var(--surface); color:var(--ink-700); font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:0; text-transform:none; font-weight:600; border-radius:20px; padding:2px 10px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+  .doc-info-btn:hover { color:var(--ink-900); border-color:var(--series-pre); }
+  .doc-info-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .doc-info-modal { background:var(--surface); border:1px solid var(--ring); border-radius:12px; max-width:560px; width:100%; max-height:80vh; overflow-y:auto; padding:22px 24px; box-shadow:0 16px 44px rgba(0,0,0,0.28); font-family:"Source Sans 3", system-ui, sans-serif; }
+  .doc-info-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .doc-info-head h3 { font-family:"Fraunces", Georgia, serif; font-size:19px; font-weight:600; margin:0; }
+  .doc-info-close { appearance:none; border:none; background:none; color:var(--ink-500); font-size:17px; cursor:pointer; line-height:1; padding:4px; }
+  .doc-info-close:hover { color:var(--ink-900); }
+  .doc-info-body { font-size:13.5px; color:var(--ink-700); line-height:1.6; margin-top:10px; }
+  .doc-info-body h4 { font-family:"IBM Plex Mono",monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-500); margin:16px 0 6px; }
+  .doc-info-body h4:first-child { margin-top:0; }
+  .doc-info-body dl { margin:0; }
+  .doc-info-body dt { font-weight:650; color:var(--ink-900); margin-top:8px; }
+  .doc-info-body dd { margin:2px 0 0; }
+  .doc-info-body code { font-family:"IBM Plex Mono",monospace; font-size:0.92em; background:var(--ring); padding:0.1em 0.4em; border-radius:4px; }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow"><span>Qwen2.5-VL-3B-Instruct</span><span class="dot"></span><span>How2Sign · 300 held-out sentences</span><span class="dot"></span><span>region-masking reliability</span><span class="dot"></span><span class="doc-ver">Ver. 1</span><button class="doc-info-btn" id="docInfoBtn" type="button">ⓘ Scorers &amp; methods</button></div>
+    <h1>Fine-tuning didn't teach it to look. It taught it to guess more confidently.</h1>
+    <p class="deck">Blur out a body region and a model that's actually reading the signer should get less sure of itself. We ran that test — one whole-frame pass, then a region-by-region pass over eyes, nose, mouth, face, shoulders and both hands — on the same 300 sentences, before and after LoRA fine-tuning on 4,000 How2Sign clips. <b>Neither version reacts much to being blinded</b>, and the fine-tuned one reacts <b>less</b>, mostly because it stopped describing the video at all.</p>
+  </header>
+
+  <section id="headline-stats">
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Confidence drop when blurred</div>
+        <div class="rows">
+          <div class="row"><span class="who"><span class="swatch" style="background:var(--series-pre)"></span>Zero-shot</span><span class="val">&minus;0.002</span></div>
+          <div class="row"><span class="who"><span class="swatch" style="background:var(--series-sft)"></span>Fine-tuned</span><span class="val">&minus;0.001</span></div>
+        </div>
+        <div class="foot">Real grounding reads clearly positive. Both sit at noise level.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Distinct sentences produced</div>
+        <div class="rows">
+          <div class="row"><span class="who"><span class="swatch" style="background:var(--series-pre)"></span>Zero-shot</span><span class="val">128<span style="color:var(--ink-500);font-weight:400;font-size:13px;"> /297</span></span></div>
+          <div class="row"><span class="who"><span class="swatch" style="background:var(--series-sft)"></span>Fine-tuned</span><span class="val">63<span style="color:var(--ink-500);font-weight:400;font-size:13px;"> /297</span></span></div>
+        </div>
+        <div class="foot">Fine-tuning roughly halved output variety.</div>
+      </div>
+      <div class="tile">
+        <div class="label">Single most-repeated answer</div>
+        <div class="rows">
+          <div class="row"><span class="who">Fine-tuned model</span><span class="val" style="color:var(--critical)">167&times;</span></div>
+        </div>
+        <div class="foot">56% of all 297 clips get "So, I'm going to show you how to do that in just a few minutes." — regardless of content.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="whole-frame">
+    <h2>The whole-frame test</h2>
+    <p class="section-note">Every clip, generated twice: once clean, once with the entire frame Gaussian-blurred. <code>prob_drop</code> is how much the model's confidence in its own words falls when blinded; <code>hidden_shift</code> is how much its internal state moves. A model reading the signer should show both, clearly above zero.</p>
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--series-pre)"></span>Zero-shot (pretrained)</span>
+      <span class="item"><span class="sw" style="background:var(--series-sft)"></span>Fine-tuned (How2Sign LoRA)</span>
+    </div>
+    <div class="chart-card"><svg id="chart-wholeframe" viewBox="0 0 860 190"></svg></div>
+  </section>
+
+  <section id="region-magnitude">
+    <h2>Which region, if blurred, moves the needle</h2>
+    <p class="section-note">Same test, but masking one anatomical region at a time (a ±0.5s window around the cue frame), with a same-size random-patch control subtracted out so a region's <em>size</em> alone can't win. Bars are <code>prob_drop</code> — how much confidence falls when that one region goes dark. Ordered by how often linguists actually flagged each region as the real cue.</p>
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--series-pre)"></span>Zero-shot</span>
+      <span class="item"><span class="sw" style="background:var(--series-sft)"></span>Fine-tuned</span>
+    </div>
+    <div class="chart-card"><svg id="chart-region-prob" viewBox="0 0 860 300"></svg></div>
+  </section>
+
+  <section id="region-hidden">
+    <h2>Internal disruption, region by region</h2>
+    <p class="section-note"><code>hidden_shift</code> — how much the model's last hidden state moves when that region is masked. Smaller across almost every region for the fine-tuned model: not just less confident when blinded, its internal computation barely notices. One caveat: masking <b>face</b> perturbs the internal state most for both models by a wide margin — largely a residual size effect the control correction doesn't fully remove, so treat cross-region ranking here as directional, not exact.</p>
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--series-pre)"></span>Zero-shot</span>
+      <span class="item"><span class="sw" style="background:var(--series-sft)"></span>Fine-tuned</span>
+    </div>
+    <div class="chart-card"><svg id="chart-region-hidden" viewBox="0 0 860 300"></svg></div>
+  </section>
+
+  <section id="best-region">
+    <h2>Where each model's attention peaks</h2>
+    <p class="section-note">For each sentence, whichever region gave the biggest confidence drop is that clip's "most-relied-on" region. Share of all 300 sentences, by region — with a tick marking how often <b>linguists actually annotated that region as the true cue</b>, for reference.</p>
+    <div class="legend">
+      <span class="item"><span class="sw" style="background:var(--series-pre)"></span>Zero-shot</span>
+      <span class="item"><span class="sw" style="background:var(--series-sft)"></span>Fine-tuned</span>
+      <span class="item"><span style="width:14px;height:2px;background:var(--ink-900);opacity:0.55;display:inline-block;"></span>Linguist-annotated ground truth</span>
+    </div>
+    <div class="chart-card"><svg id="chart-best-region" viewBox="0 0 860 300"></svg></div>
+  </section>
+
+  <section id="collapse">
+    <h2>The collapse, in its own words</h2>
+    <p class="section-note">Most-frequent verbatim outputs across the 297 scored clips — same input distribution, both models, greedy decoding. The fine-tuned model isn't wrong about signer-specific details less often; it's mostly not attempting them.</p>
+    <div class="collapse-cols">
+      <div class="collapse-col">
+        <h3>Zero-shot</h3>
+        <div class="sub">128 distinct answers across 297 clips</div>
+        <div class="rep-row"><span class="rep-count">54&times;</span><span class="rep-text top">&ldquo;I'm sorry, but I can't assist with that.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">24&times;</span><span class="rep-text">&ldquo;I'm going to be talking about the importance of being able to read and write in sign language.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">22&times;</span><span class="rep-text">&ldquo;I'm going to be talking about the importance of being able to read lips.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">15&times;</span><span class="rep-text">&ldquo;I'm going to show you how to sign "I love you."&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">14&times;</span><span class="rep-text">&ldquo;I'm going to show you how to do it. I'm going to show you how to do it&hellip;&rdquo;</span></div>
+      </div>
+      <div class="collapse-col">
+        <h3>Fine-tuned</h3>
+        <div class="sub">63 distinct answers across 297 clips</div>
+        <div class="rep-row"><span class="rep-count" style="background:color-mix(in srgb, var(--critical) 18%, var(--ring));">167&times;</span><span class="rep-text top">&ldquo;So, I'm going to show you how to do that in just a few minutes.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">12&times;</span><span class="rep-text">&ldquo;And then you can just kind of go ahead and do that.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">10&times;</span><span class="rep-text">&ldquo;So, I'm going to take my brush and I'm going to go ahead and just kind of blend it in there.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">10&times;</span><span class="rep-text">&ldquo;I'm going to show you how to do that in just a moment.&rdquo;</span></div>
+        <div class="rep-row"><span class="rep-count">7&times;</span><span class="rep-text">&ldquo;I'm going to show you how to do that.&rdquo;</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="corpus">
+    <h2>For the record: text-overlap metrics</h2>
+    <p class="section-note">Included because someone will ask. Fine-tuning nudges BLEU and ROUGE-L up slightly — plausible, since How2Sign's instructional phrasing gives any generic-but-genre-appropriate guess a floor of n-gram overlap. It does not indicate the model is translating the signing.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th class="num">Zero-shot</th><th class="num">Fine-tuned</th></tr></thead>
+        <tbody>
+          <tr><td>BLEU</td><td class="num">0.69</td><td class="num">1.17</td></tr>
+          <tr><td>chrF</td><td class="num">16.07</td><td class="num">12.45</td></tr>
+          <tr><td>ROUGE-L</td><td class="num">10.03</td><td class="num">13.40</td></tr>
+          <tr><td>Lexical F1 vs. ground truth</td><td class="num">0.127</td><td class="num">0.163</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <div><b>Model.</b> Qwen2.5-VL-3B-Instruct, base vs. a LoRA adapter trained on 4,000 How2Sign clips (2 effective epochs before early stopping on rising val loss; see training run notes).</div>
+    <div><b>Method.</b> Whole-frame pass: full Gaussian blur, teacher-forced on the model's own greedy prediction, confidence/hidden-state compared clean vs. blurred (297/300 clips scored; 3 failed decoding). Region pass: a ±0.5s window per sentence (frame count from that clip's own fps) around a CLIP-grounded cue frame, one of eyes / nose / mouth / face / shoulders / right hand / left hand blurred per pass using OpenPose landmarks, each score adjusted against a random same-size control patch (300/300 clips, same sentence&ndash;phrase pairs for both models).</div>
+    <div><b>Caveats.</b> The region probe teacher-forces a single cue word after a single-word-answer prompt, not the full-sentence translation prompt used in fine-tuning — a proxy, not a like-for-like replay of either model's natural output. <code>hidden_shift</code> is more confounded by region size/salience than <code>prob_drop</code>; read the region-ranking chart as directional.</div>
+  </footer>
+
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="doc-info-overlay" id="docInfoOverlay" hidden>
+  <div class="doc-info-modal" role="dialog" aria-modal="true" aria-labelledby="docInfoTitle">
+    <div class="doc-info-head">
+      <h3 id="docInfoTitle">Scorers &amp; methodology</h3>
+      <button class="doc-info-close" id="docInfoClose" type="button" aria-label="Close">✕</button>
+    </div>
+    <div class="doc-info-body">
+      <h4>Model</h4>
+      <p>Qwen2.5-VL-3B-Instruct — zero-shot (pretrained) vs. a LoRA adapter trained on 4,000 How2Sign clips (2 effective epochs before early stopping on rising val loss).</p>
+      <h4>Whole-frame scorer</h4>
+      <dl>
+        <dt>prob_drop</dt><dd>drop in the model's own-token confidence, clean vs. fully Gaussian-blurred frame, teacher-forced on its own greedy prediction.</dd>
+        <dt>hidden_shift</dt><dd>how far the model's last hidden state moves, clean vs. blurred.</dd>
+        <dt>nll_delta</dt><dd>negative log-likelihood increase when blurred.</dd>
+      </dl>
+      <p>297/300 clips scored (3 failed decoding).</p>
+      <h4>Region scorer</h4>
+      <p>Same prob_drop / hidden_shift pair, region-specific: a ±0.5s window (OpenPose landmarks) around a CLIP-grounded cue frame, one of eyes/nose/mouth/face/shoulders/left hand/right hand blurred per pass, each score corrected against a same-size random-patch control. 300/300 clips, identical sentence–phrase pairs for both models.</p>
+      <h4>Text-overlap (secondary)</h4>
+      <p>BLEU, chrF, ROUGE-L, Lexical F1 vs. ground truth — included for completeness; not treated as evidence of grounding (see write-up).</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var isDark = false; // resolved per-chart at draw time is unnecessary; colors come from CSS vars, but SVG needs computed values
+  function cssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  var tooltip = document.getElementById('tooltip');
+  function showTip(evt, lines){
+    tooltip.innerHTML = lines.join('<br>');
+    tooltip.classList.add('show');
+    moveTip(evt);
+  }
+  function moveTip(evt){
+    var x = evt.clientX + 14, y = evt.clientY + 14;
+    var tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+    if (x + tw > window.innerWidth - 10) x = evt.clientX - tw - 14;
+    if (y + th > window.innerHeight - 10) y = evt.clientY - th - 14;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  }
+  function hideTip(){ tooltip.classList.remove('show'); }
+
+  function svgEl(tag, attrs){
+    var el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  // ---- Grouped horizontal bar chart ----
+  // rows: [{label, pre, sft, ref(optional)}]
+  // opts: {domainMin, domainMax, fmt(v), unit, width, rowH, barH, leftPad}
+  function groupedBarChart(svgId, rows, opts){
+    var svg = document.getElementById(svgId);
+    var W = opts.width || 860;
+    var leftPad = opts.leftPad || 96;
+    var rightPad = 46;
+    var rowH = opts.rowH || 40;
+    var barH = opts.barH || 13;
+    var topPad = 14;
+    var H = topPad + rows.length * rowH + 30;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+    var plotW = W - leftPad - rightPad;
+    var dMin = opts.domainMin, dMax = opts.domainMax;
+    function xOf(v){ return leftPad + (v - dMin) / (dMax - dMin) * plotW; }
+    var zeroX = xOf(0);
+
+    var colorPre = cssVar('--series-pre');
+    var colorSft = cssVar('--series-sft');
+
+    // gridlines (a handful of ticks)
+    var ticks = opts.ticks;
+    ticks.forEach(function(t){
+      var x = xOf(t);
+      svg.appendChild(svgEl('line', {x1:x, x2:x, y1:topPad-4, y2: topPad + rows.length*rowH - 8, class:'gridline'}));
+      var lab = svgEl('text', {x:x, y: topPad + rows.length*rowH + 16, class:'axis-label', 'text-anchor':'middle'});
+      lab.textContent = opts.fmt(t);
+      svg.appendChild(lab);
+    });
+    // baseline at 0 (drawn stronger)
+    svg.appendChild(svgEl('line', {x1:zeroX, x2:zeroX, y1:topPad-4, y2: topPad + rows.length*rowH - 8, class:'baseline-rule'}));
+
+    rows.forEach(function(row, i){
+      var cy = topPad + i * rowH;
+      var label = svgEl('text', {x: leftPad - 12, y: cy + rowH/2 + 4, class:'bar-label', 'text-anchor':'end'});
+      label.textContent = row.label;
+      svg.appendChild(label);
+
+      [['pre', row.pre, colorPre, 'Zero-shot'], ['sft', row.sft, colorSft, 'Fine-tuned']].forEach(function(pair, j){
+        var key = pair[0], val = pair[1], color = pair[2], who = pair[3];
+        var y = cy + 4 + j * (barH + 4);
+        var x0 = Math.min(zeroX, xOf(val));
+        var x1 = Math.max(zeroX, xOf(val));
+        var w = Math.max(1.5, x1 - x0);
+        var rect = svgEl('rect', {
+          x:x0, y:y, width:w, height:barH, rx:4, ry:4,
+          fill:color, class:'bar', 'data-who':who, 'data-val':val, 'data-label':row.label
+        });
+        svg.appendChild(rect);
+        rect.addEventListener('mouseenter', function(e){
+          showTip(e, [row.label, '<span class="t-who">'+who+'</span>  ' + opts.fmt(val, true)]);
+          rect.classList.add('hovered');
+        });
+        rect.addEventListener('mousemove', moveTip);
+        rect.addEventListener('mouseleave', function(){ hideTip(); rect.classList.remove('hovered'); });
+      });
+
+      if (row.ref !== undefined && row.ref !== null){
+        var rx = xOf(row.ref);
+        var tick = svgEl('line', {x1:rx, x2:rx, y1: cy - 1, y2: cy + rowH - 5, class:'tick-ref'});
+        svg.appendChild(tick);
+        tick.addEventListener('mouseenter', function(e){
+          showTip(e, [row.label, '<span class="t-who">Ground truth</span>  ' + opts.fmt(row.ref, true)]);
+        });
+        tick.addEventListener('mousemove', moveTip);
+        tick.addEventListener('mouseleave', hideTip);
+      }
+    });
+  }
+
+  // ---- Whole-frame small multiple (3 metrics x 2 series, vertical grid) ----
+  function wholeFrameChart(){
+    var svg = document.getElementById('chart-wholeframe');
+    var metrics = [
+      {label:'prob_drop', pre:-0.00219, sft:-0.00054, min:-0.02, max:0.02, fmt:function(v){return v.toFixed(3);}},
+      {label:'hidden_shift', pre:0.01756, sft:0.00467, min:0, max:0.022, fmt:function(v){return v.toFixed(3);}},
+      {label:'nll_delta', pre:0.08317, sft:0.04048, min:0, max:0.10, fmt:function(v){return v.toFixed(3);}}
+    ];
+    var W = 860, H = 190;
+    svg.setAttribute('viewBox','0 0 '+W+' '+H);
+    var colW = W / metrics.length;
+    var plotTop = 20, plotBot = 150, plotH = plotBot - plotTop;
+    var colorPre = cssVar('--series-pre'), colorSft = cssVar('--series-sft');
+
+    metrics.forEach(function(m, i){
+      var cx = colW * i + colW/2;
+      var groupW = 96;
+      function yOf(v){ return plotBot - (v - m.min)/(m.max-m.min) * plotH; }
+      var zeroY = yOf(0);
+      svg.appendChild(svgEl('line', {x1:cx-groupW/2, x2:cx+groupW/2, y1:zeroY, y2:zeroY, class:'baseline-rule'}));
+
+      [['pre', m.pre, colorPre, 'Zero-shot', -1], ['sft', m.sft, colorSft, 'Fine-tuned', 1]].forEach(function(pair){
+        var val=pair[1], color=pair[2], who=pair[3], dir=pair[4];
+        var bw = 30;
+        var bx = cx + dir*20 - bw/2;
+        var y0 = Math.min(zeroY, yOf(val));
+        var y1 = Math.max(zeroY, yOf(val));
+        var h = Math.max(2, y1-y0);
+        var rect = svgEl('rect', {x:bx, y:y0, width:bw, height:h, rx:4, ry:4, fill:color, class:'bar'});
+        svg.appendChild(rect);
+        rect.addEventListener('mouseenter', function(e){ showTip(e, [m.label, '<span class="t-who">'+who+'</span>  '+m.fmt(val)]); rect.classList.add('hovered'); });
+        rect.addEventListener('mousemove', moveTip);
+        rect.addEventListener('mouseleave', function(){ hideTip(); rect.classList.remove('hovered'); });
+
+        var vlab = svgEl('text', {x:bx+bw/2, y: (val>=0 ? y0-6 : y1+14), class:'value-label', 'text-anchor':'middle'});
+        vlab.textContent = m.fmt(val);
+        svg.appendChild(vlab);
+      });
+
+      var lab = svgEl('text', {x:cx, y: plotBot + 26, class:'bar-label', 'text-anchor':'middle'});
+      lab.textContent = m.label;
+      svg.appendChild(lab);
+    });
+  }
+
+  wholeFrameChart();
+
+  var fmtProb = function(v, full){ return (full? (v>=0?'+':'') : '') + v.toFixed(3); };
+  var fmtPct = function(v, full){ return (full? v.toFixed(1)+'%' : Math.round(v)+'%'); };
+
+  groupedBarChart('chart-region-prob', [
+    {label:'Right hand', pre:-0.11738, sft:-0.04408},
+    {label:'Left hand',  pre:-0.10710, sft:-0.05335},
+    {label:'Shoulders',  pre:-0.27289, sft:-0.15530},
+    {label:'Mouth',      pre:-0.03986, sft:-0.02541},
+    {label:'Face',       pre:-0.22669, sft:-0.14853},
+    {label:'Eyes',       pre:-0.05200, sft:-0.04669},
+    {label:'Nose',       pre:-0.06508, sft:-0.02432}
+  ], {domainMin:-0.30, domainMax:0.02, ticks:[-0.30,-0.20,-0.10,0], fmt:fmtProb});
+
+  groupedBarChart('chart-region-hidden', [
+    {label:'Right hand', pre:0.09896, sft:0.08600},
+    {label:'Left hand',  pre:0.07577, sft:0.07231},
+    {label:'Shoulders',  pre:0.16636, sft:0.12644},
+    {label:'Mouth',      pre:0.12584, sft:0.06276},
+    {label:'Face',       pre:0.23333, sft:0.18557},
+    {label:'Eyes',       pre:0.12891, sft:0.07430},
+    {label:'Nose',       pre:0.11810, sft:0.06924}
+  ], {domainMin:0, domainMax:0.26, ticks:[0,0.05,0.10,0.15,0.20,0.25], fmt:fmtProb});
+
+  groupedBarChart('chart-best-region', [
+    {label:'Right hand', pre:9.7,  sft:25.0, ref:29.0},
+    {label:'Left hand',  pre:14.7, sft:18.0, ref:24.0},
+    {label:'Shoulders',  pre:0.3,  sft:1.0,  ref:16.3},
+    {label:'Mouth',      pre:34.0, sft:17.7, ref:12.0},
+    {label:'Face',       pre:1.0,  sft:2.3,  ref:8.3},
+    {label:'Eyes',       pre:24.7, sft:10.0, ref:5.3},
+    {label:'Nose',       pre:15.7, sft:26.0, ref:5.0}
+  ], {domainMin:0, domainMax:36, ticks:[0,10,20,30], fmt:fmtPct});
+
+})();
+
+(function(){
+  var btn=document.getElementById('docInfoBtn'), overlay=document.getElementById('docInfoOverlay'), closeBtn=document.getElementById('docInfoClose');
+  if(!btn||!overlay||!closeBtn) return;
+  function openModal(){ overlay.hidden=false; }
+  function closeModal(){ overlay.hidden=true; }
+  btn.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  overlay.addEventListener('click', function(e){ if(e.target===overlay) closeModal(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && !overlay.hidden) closeModal(); });
+})();
+</script>
+
+</body></html>
