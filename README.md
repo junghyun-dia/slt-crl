@@ -3,9 +3,18 @@
 Interactive reports on **visual grounding in sign language translation (SLT)** using the How2Sign dataset.
 We test whether models' output quality really depends on the signer's body regions (eyes, nose, mouth, face, shoulders, both hands), or whether BLEU gains come from somewhere else.
 
-**Live page:** [https://<junghyun-dia>.github.io/<slt-crl>/](https://junghyun-dia.github.io/slt-crl/)
+**Live page:** [https://junghyun-dia.github.io/slt-crl/](https://junghyun-dia.github.io/slt-crl/)
+**Live demo:** [https://6860aqq1pz1upy-5173.proxy.runpod.net/](https://6860aqq1pz1upy-5173.proxy.runpod.net/)
+**Demo video:** [https://youtu.be/FLVSBz9HGCQ](https://youtu.be/FLVSBz9HGCQ)
 
 ---
+
+## Demo
+
+[![Demo video](https://img.youtube.com/vi/FLVSBz9HGCQ/maxresdefault.jpg)](https://youtu.be/FLVSBz9HGCQ)
+
+- **Video:** [youtu.be/FLVSBz9HGCQ](https://youtu.be/FLVSBz9HGCQ)
+- **Try it live:** [6860aqq1pz1upy-5173.proxy.runpod.net](https://6860aqq1pz1upy-5173.proxy.runpod.net/) (hosted on a RunPod instance, so it may be offline at times)
 
 ## Reports
 
