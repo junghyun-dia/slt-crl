@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Does Sign Language Translation Actually Look at the Signer?</title>
-<meta name="description" content="Interactive reports on visual grounding in sign language translation, using How2Sign.">
+<meta name="description" content="Interactive reports on visual grounding in sign language translation, across ASL (How2Sign, WLASL) and Korean Sign Language (NIKL).">
 <style>
   :root {
     --bg: #faf9f7;
@@ -76,6 +76,20 @@
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn:hover, .btn:focus-visible { border-color: var(--accent); outline: none; }
   .demo-note { margin: 8px 0 0; font-size: 13px; color: var(--muted); }
+  .datasets {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px; margin-bottom: 44px;
+  }
+  .ds { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .ds .lang { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--muted); }
+  .ds h3 { margin: 4px 0 6px; font-size: 16px; }
+  .ds p { margin: 0; font-size: 14px; color: var(--muted); }
+  .ds .approval { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
+  .tag {
+    display: inline-block; font-family: ui-monospace, Menlo, monospace; font-size: 11px;
+    padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted);
+    margin-left: 6px; vertical-align: 1px;
+  }
   .note {
     margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--border);
     font-size: 13px; color: var(--muted);
@@ -84,11 +98,12 @@
 </head>
 <body>
 <main>
-  <div class="eyebrow">How2Sign &middot; 300 held-out sentences &middot; 4K-sentence training slice</div>
+  <div class="eyebrow">ASL &middot; How2Sign &middot; WLASL &nbsp;|&nbsp; KSL &middot; NIKL</div>
   <h1>Does Sign Language Translation Actually Look at the Signer?</h1>
   <p class="lead">
     Interactive reports testing whether SLT models’ output quality depends on the signer’s body regions
-    (eyes, nose, mouth, face, shoulders, hands), or whether BLEU gains come from somewhere else.
+    (eyes, nose, mouth, face, shoulders, hands), or whether BLEU gains come from somewhere else,
+    across American Sign Language and Korean Sign Language.
   </p>
 
   <div class="facts">
@@ -97,8 +112,29 @@
     <div class="fact"><b>+0.4pp</b><span>scorer agreement over chance</span></div>
   </div>
 
+  <h2>Datasets</h2>
+  <div class="datasets">
+    <div class="ds">
+      <div class="lang">ASL &rarr; English &middot; sentence</div>
+      <h3>How2Sign</h3>
+      <p>SLT training and all grounding reports below: a 4,000-sentence training slice and 300 held-out test sentences.</p>
+    </div>
+    <div class="ds">
+      <div class="lang">ASL &middot; isolated word</div>
+      <h3>WLASL</h3>
+      <p>Initial probing of how well vision-language models understand body-region information. Not used to train SLT models.</p>
+    </div>
+    <div class="ds">
+      <div class="lang">KSL &rarr; Korean &middot; sentence</div>
+      <h3>NIKL Korean Sign Language Corpus 2023, 2024</h3>
+      <p>국립국어원 한국수어 말뭉치. Used for SLT training and the demo below.</p>
+      <p class="approval">Used with approval from the National Institute of Korean Language (NIKL, 국립국어원) for AI training and presentation at academic conferences and in publications, including this project page and demo.</p>
+    </div>
+  </div>
+
   <section class="demo">
-    <h2>Demo</h2>
+    <h2>Demo <span class="tag">Korean Sign Language &middot; NIKL</span></h2>
+    <p class="demo-note" style="margin:0 0 12px">A conversation between a Deaf and a hearing participant, in which the Deaf signer takes part directly in finalizing the translation. It shows the <b>Conversational Repair Loop</b> in action, using a model trained on the NIKL Korean Sign Language Corpus.</p>
     <div class="video">
       <iframe src="https://www.youtube-nocookie.com/embed/FLVSBz9HGCQ" title="Demo video"
         loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
@@ -114,25 +150,25 @@
   <h2>Reports</h2>
   <div class="cards">
     <a class="card" href="artifacts/mmslt-region-ablation-4k.html">
-      <div class="step">01 &middot; Region ablation</div>
+      <div class="step">01 &middot; Region ablation<span class="tag">How2Sign</span></div>
       <h3>MMSLT Region Ablation (4K Training)</h3>
       <p>Blacks out each body region at test time and re-runs generation with the same checkpoint to measure how much output quality depends on it.</p>
       <div class="go">Open report &rarr;</div>
     </a>
     <a class="card" href="artifacts/grounding-or-guessing.html">
-      <div class="step">02 &middot; Fine-tuning</div>
+      <div class="step">02 &middot; Fine-tuning<span class="tag">How2Sign</span></div>
       <h3>Grounding or Guessing</h3>
       <p>Region-masking reliability of Qwen2.5-VL-3B-Instruct before and after LoRA fine-tuning. Fine-tuning didn’t teach it to look; it taught it to guess more confidently.</p>
       <div class="go">Open report &rarr;</div>
     </a>
     <a class="card" href="artifacts/clip-vs-signclip.html">
-      <div class="step">03 &middot; Scorer check</div>
+      <div class="step">03 &middot; Scorer check<span class="tag">How2Sign</span></div>
       <h3>CLIP vs SignCLIP</h3>
       <p>Two zero-shot scorers, two different answers: their agreement on which body region a cue word grounds to is barely above chance.</p>
       <div class="go">Open report &rarr;</div>
     </a>
     <a class="card" href="artifacts/grounding-viewer-4k.html">
-      <div class="step">04 &middot; Examples</div>
+      <div class="step">04 &middot; Examples<span class="tag">How2Sign</span></div>
       <h3>Grounding Example Viewer (4K Training)</h3>
       <p>Browse individual examples behind the aggregate numbers.</p>
       <div class="go">Open viewer &rarr;</div>
@@ -141,7 +177,8 @@
 
   <p class="note">
     Work in progress: scaled-up training runs (10K / 20K / ~31K sentences) are planned as a follow-up.
-    How2Sign data is subject to its own license.
+    How2Sign is used under CC BY-NC 4.0; reports include test-set sentences and downsampled frame thumbnails for non-commercial research illustration.
+    NIKL Korean Sign Language Corpus data is used with approval from the National Institute of Korean Language and is not redistributed here.
   </p>
 </main>
 </body>
